@@ -12,16 +12,23 @@ def create_app():
     os.makedirs(app.config["UPLOAD_DIR"], exist_ok=True)
 
     db.init_app(app)
-    # Frontend dev server runs on a different port; credentials are needed
-    # so the session cookie is sent with each request.
+
+    # Frontend development servers
+    origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+    ]
+
+    # Production frontend URL from Render environment variables
+    frontend_url = os.environ.get("JALIA_FRONTEND_URL")
+    if frontend_url:
+        origins.append(frontend_url)
+
     cors.init_app(
         app,
         supports_credentials=True,
-        origins=[
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:5174",
-        ],
+        origins=origins,
     )
 
     from auth import auth_bp

@@ -16,7 +16,7 @@ class Config:
 
     SESSION_COOKIE_NAME = "jalia_session"
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SAMESITE = os.environ.get("JALIA_COOKIE_SAMESITE", "Lax")
     # Set to True when served over HTTPS in production.
     SESSION_COOKIE_SECURE = os.environ.get("JALIA_COOKIE_SECURE", "false").lower() == "true"
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
