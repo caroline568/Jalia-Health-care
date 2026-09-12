@@ -3,7 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { formatWhen } from "../lib/eventMeta";
-import { PlusIcon, ChevronRight, CalendarIcon, CheckIcon } from "../components/Icons";
+import {
+  PlusIcon, CheckIcon, MicIcon, CameraIcon, UploadIcon,
+  CompassIcon, PouchIcon, PulseIcon, HandoffIcon,
+} from "../components/Icons";
+import CaptureSheet from "../components/CaptureSheet";
 
 export default function Home() {
   const { user } = useAuth();
@@ -11,6 +15,7 @@ export default function Home() {
   const [recipients, setRecipients] = useState(null);
   const [error, setError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [captureMethod, setCaptureMethod] = useState(null); // "voice" | "photo" | "upload" | null
 
   useEffect(() => { load(); }, []);
 
@@ -24,19 +29,24 @@ export default function Home() {
   }
 
   const firstName = user?.name?.split(" ")[0];
+  // The person who most needs attention right now anchors the quick-capture
+  // block and the pillar shortcuts below — mirrors the single-care-space
+  // focus of the design while still listing everyone above it.
+  const featured = recipients?.find((r) => r.needsAttention) || recipients?.[0] || null;
 
   return (
     <div>
       <div className="page-header">
-        <div className="eyebrow">{greeting()}, {firstName}</div>
-        <h1>Who needs your attention</h1>
+        <div className="eyebrow">Jalia</div>
+        <h1>{greeting()}, {firstName}</h1>
+        <p className="text-muted" style={{ marginTop: 4 }}>Who needs your attention?</p>
       </div>
 
       {error && <div className="banner banner-error">{error}</div>}
 
       {recipients === null && !error && (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          {[0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 88 }} />)}
+          {[0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 120 }} />)}
         </div>
       )}
 
@@ -50,39 +60,53 @@ export default function Home() {
         </div>
       )}
 
-      {recipients?.map((r) => (
-        <Link key={r.id} to={`/app/care/${r.id}`} className="recipient-tile">
-          <div className="recipient-photo">{r.name?.[0]?.toUpperCase()}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3>{r.name}</h3>
-            {r.needsAttention ? (
-              <p className="text-sm" style={{ color: "var(--primary-strong)", marginTop: 3, display: "flex", alignItems: "center", gap: 5 }}>
-                <CalendarIcon width={14} height={14} /> {r.needsAttention.title} · {formatWhen(r.needsAttention.occurredAt)}
-              </p>
-            ) : r.recent ? (
-              <p className="text-sm text-muted" style={{ marginTop: 3 }}>Recent: {r.recent.title}</p>
-            ) : (
-              <p className="text-sm text-faint" style={{ marginTop: 3 }}>No recent activity</p>
-            )}
-            {r.next && (
-              <p className="text-sm text-muted" style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 5 }}>
-                <CheckIcon width={13} height={13} /> Next: {r.next.title}
-              </p>
-            )}
-            {r.network?.length > 0 && (
-              <p className="text-faint text-sm" style={{ marginTop: 3 }}>
-                {r.network.length} {r.network.length === 1 ? "person" : "people"} involved
-              </p>
-            )}
-          </div>
-          <ChevronRight width={20} height={20} style={{ color: "var(--text-faint)", flexShrink: 0 }} />
-        </Link>
-      ))}
+      {recipients?.map((r) => <RecipientCard key={r.id} recipient={r} />)}
 
       {recipients?.length > 0 && (
-        <button className="btn btn-secondary" onClick={() => setShowAdd(true)}>
+        <button className="btn btn-secondary" style={{ marginBottom: "var(--space-5)" }} onClick={() => setShowAdd(true)}>
           <PlusIcon width={16} height={16} /> Add a loved one
         </button>
+      )}
+
+      {featured && (
+        <>
+          <div className="capture-cta">
+            <h2>What happened?</h2>
+            <p>Capture it without filling a form.</p>
+            <div className="capture-cta-actions">
+              <button className="capture-cta-btn" onClick={() => setCaptureMethod("voice")}>
+                <MicIcon width={16} height={16} /> Speak
+              </button>
+              <button className="capture-cta-btn" onClick={() => setCaptureMethod("photo")}>
+                <CameraIcon width={16} height={16} /> Snap
+              </button>
+              <button className="capture-cta-btn" onClick={() => setCaptureMethod("upload")}>
+                <UploadIcon width={16} height={16} /> Upload
+              </button>
+            </div>
+          </div>
+
+          <nav className="pillar-nav" aria-label={`${featured.name}'s care flow`}>
+            {featured.needsAttention ? (
+              <Link to={`/app/care/${featured.id}/appointments/${featured.needsAttention.id}`}>
+                <CompassIcon width={16} height={16} /> Navigate
+              </Link>
+            ) : (
+              <Link to={`/app/care/${featured.id}`}>
+                <CompassIcon width={16} height={16} /> Navigate
+              </Link>
+            )}
+            <button type="button" onClick={() => setCaptureMethod("choose")}>
+              <PouchIcon width={16} height={16} /> Carry
+            </button>
+            <Link to={`/app/care/${featured.id}/activity`}>
+              <PulseIcon width={16} height={16} /> Coordinate
+            </Link>
+            <Link to={`/app/care/${featured.id}/handoff`}>
+              <HandoffIcon width={16} height={16} /> Handoff
+            </Link>
+          </nav>
+        </>
       )}
 
       {showAdd && (
@@ -91,7 +115,69 @@ export default function Home() {
           onCreated={(r) => { setShowAdd(false); navigate(`/app/care/${r.id}`); }}
         />
       )}
+
+      {captureMethod && featured && (
+        <CaptureSheet
+          careRecipientId={featured.id}
+          initialMethod={captureMethod === "choose" ? undefined : captureMethod}
+          onClose={() => setCaptureMethod(null)}
+          onSaved={load}
+        />
+      )}
     </div>
+  );
+}
+
+function RecipientCard({ recipient: r }) {
+  return (
+    <>
+      <Link to={`/app/care/${r.id}`} className="recipient-card">
+        <div className="recipient-card-top">
+          <h3>{r.name}</h3>
+          <span className="text-sm text-faint">Care space</span>
+        </div>
+
+        {(r.needsAttention || (!r.needsAttention && r.recent)) && <div className="recipient-card-divider" />}
+
+        {r.needsAttention ? (
+          <div className="recipient-card-section attention">
+            <div className="eyebrow">Needs attention</div>
+            <h4>{r.needsAttention.title}</h4>
+            <p className="text-sm text-muted">
+              {formatWhen(r.needsAttention.occurredAt)}
+              {r.needsAttention.details?.location && ` · ${r.needsAttention.details.location}`}
+            </p>
+            {r.needsAttention.details?.escort && (
+              <p className="text-sm text-muted">{r.needsAttention.details.escort} is taking {r.name}</p>
+            )}
+          </div>
+        ) : r.recent ? (
+          <div className="recipient-card-section recent">
+            <div className="eyebrow">Recent care</div>
+            <h4>{r.recent.title}</h4>
+            {r.recent.summary && <p className="text-sm text-muted">{r.recent.summary}</p>}
+          </div>
+        ) : (
+          <p className="text-sm text-faint">No recent activity</p>
+        )}
+
+        {r.next && (
+          <p className="text-sm text-muted" style={{ marginTop: "var(--space-3)", display: "flex", alignItems: "center", gap: 5 }}>
+            <CheckIcon width={13} height={13} /> Next: {r.next.title}
+          </p>
+        )}
+      </Link>
+
+      {/* When there's both an upcoming appointment and separate recent care,
+          show recent care as its own quieter card, same as the design. */}
+      {r.needsAttention && r.recent && (
+        <div className="recent-care-card">
+          <div className="eyebrow">Recent care</div>
+          <h4>{r.recent.title}</h4>
+          {r.recent.summary && <p className="text-sm text-muted">{r.recent.summary}</p>}
+        </div>
+      )}
+    </>
   );
 }
 

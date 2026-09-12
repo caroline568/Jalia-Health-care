@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { enqueueEvent } from "../lib/offlineQueue";
 import { useOnlineStatus } from "../lib/useOnlineStatus";
@@ -19,9 +19,11 @@ const METHODS = [
 let recognition = null;
 const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-export default function CaptureSheet({ careRecipientId, onClose, onSaved }) {
-  const [step, setStep] = useState("choose"); // choose | capture | reviewing | done
-  const [method, setMethod] = useState(null);
+export default function CaptureSheet({ careRecipientId, onClose, onSaved, initialMethod }) {
+  // When opened from a shortcut (e.g. the Home screen's "What happened?"
+  // buttons) we skip the method picker and jump straight into capture mode.
+  const [step, setStep] = useState(initialMethod ? "capture" : "choose");
+  const [method, setMethod] = useState(initialMethod || null);
   const [text, setText] = useState("");
   const [fileInfo, setFileInfo] = useState(null);
   const [recording, setRecording] = useState(false);
@@ -30,6 +32,13 @@ export default function CaptureSheet({ careRecipientId, onClose, onSaved }) {
   const [suggestions, setSuggestions] = useState([]);
   const fileInputRef = useRef(null);
   const online = useOnlineStatus();
+
+  useEffect(() => {
+    if (initialMethod === "photo" || initialMethod === "upload" || initialMethod === "screenshot") {
+      setTimeout(() => fileInputRef.current?.click(), 50);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function chooseMethod(m) {
     setMethod(m);
