@@ -27,26 +27,36 @@ export default function People() {
       {recipients === null && <div className="loading-row"><span className="spinner" /> Loading…</div>}
 
       {recipients?.map((r) => (
-        <div key={r.id} className="card" style={{ marginBottom: "var(--space-4)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ cursor: "pointer" }} onClick={() => navigate(`/app/care/${r.id}`)}>{r.name}'s care team</h3>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAddingTo(r.id)}>
-              <PlusIcon width={14} height={14} /> Add person
-            </button>
+        <div key={r.id} className="recipient-card" style={{ marginBottom: "var(--space-4)" }}>
+          <div className="recipient-card-top">
+            <h3 style={{ cursor: "pointer" }} onClick={() => navigate(`/app/care/${r.id}`)}>{r.name}</h3>
+            <span className="text-sm text-faint">{r.network?.length || 0} {r.network?.length === 1 ? "person" : "people"}</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
+
+          <div className="recipient-card-divider" />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             {r.network?.map((m) => (
               <div key={m.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                 <div className="avatar" style={{ background: "var(--primary)" }}>{m.name?.[0]?.toUpperCase()}</div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{m.name} {m.isOwner && <span className="chip chip-primary" style={{ marginLeft: 6 }}>Owner</span>}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    {m.name}
+                    {m.isOwner && <span className="chip chip-primary">Owner</span>}
+                    {!m.userId && <span className="chip chip-neutral">Not on Jalia</span>}
+                  </div>
                   <div className="text-muted text-sm">{m.role}</div>
                 </div>
               </div>
             ))}
           </div>
-          {addingTo === r.id && (
+
+          {addingTo === r.id ? (
             <AddMemberForm recipientId={r.id} onDone={() => { setAddingTo(null); load(); }} />
+          ) : (
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: "var(--space-4)" }} onClick={() => setAddingTo(r.id)}>
+              <PlusIcon width={14} height={14} /> Add person
+            </button>
           )}
         </div>
       ))}
