@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import secrets
 
 from flask import Blueprint, request, jsonify, abort
 
@@ -441,14 +442,22 @@ def save_handoff(user, recipient_id):
     data = request.get_json(silent=True) or {}
 
     content = data.get("content") or _generate_handoff_content(recipient)
+    shared = bool(data.get("shared"))
     handoff = Handoff(
         care_recipient_id=recipient.id,
         created_by=user.id,
         recipient_name=data.get("recipientName"),
         content=content,
         edited=bool(data.get("edited")),
-        shared=bool(data.get("shared")),
+        shared=shared,
     )
+    if shared:
+        # Random, unguessable token — this is the entire access control for
+        # the public read-only link, so it needs to be long enough that
+        # brute-forcing it isn't practical. Expires after 7 days so an old
+        # link shared with a since-irrelevant provider doesn't linger forever.
+        handoff.share_token = secrets.token_urlsafe(24)
+        handoff.share_expires_at = datetime.utcnow() + timedelta(days=7)
     db.session.add(handoff)
     db.session.commit()
     return jsonify({"handoff": handoff.to_dict()}), 201

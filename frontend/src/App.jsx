@@ -12,6 +12,7 @@ import OverviewTab from "./pages/OverviewTab";
 import ActivityTab from "./pages/ActivityTab";
 import HandoffTab from "./pages/HandoffTab";
 import NavigateDetail from "./pages/NavigateDetail";
+import PublicHandoff from "./pages/PublicHandoff";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+      <Route path="/handoff/:token" element={<PublicHandoff />} />
 
       <Route path="/app/care/:id/appointments/:eventId" element={<ProtectedRoute><NavigateAppointmentWrap /></ProtectedRoute>} />
 

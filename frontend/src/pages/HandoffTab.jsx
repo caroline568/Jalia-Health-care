@@ -13,6 +13,8 @@ export default function HandoffTab() {
   const [excluded, setExcluded] = useState(new Set());
   const [past, setPast] = useState(null);
   const [error, setError] = useState("");
+  const [shareToken, setShareToken] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => { loadPast(); }, []);
 
@@ -52,17 +54,25 @@ export default function HandoffTab() {
         ...preview,
         recent: preview.recent.filter((e) => !excluded.has(e.id)),
       };
-      await api.post(`/care-recipients/${recipient.id}/handoffs`, {
+      const res = await api.post(`/care-recipients/${recipient.id}/handoffs`, {
         recipientName,
         content: filteredContent,
         edited: excluded.size > 0,
         shared: true,
       });
+      setShareToken(res.handoff?.shareToken || null);
       setStep("shared");
       loadPast();
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  function copyLink(url) {
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   if (step === "idle") {
@@ -142,6 +152,7 @@ export default function HandoffTab() {
   }
 
   if (step === "shared") {
+    const shareUrl = shareToken ? `${window.location.origin}/handoff/${shareToken}` : null;
     return (
       <div style={{ textAlign: "center", padding: "var(--space-7) 0" }}>
         <div style={{
@@ -152,9 +163,30 @@ export default function HandoffTab() {
         </div>
         <h2>Handoff ready</h2>
         <p className="text-muted" style={{ marginTop: "var(--space-2)" }}>
-          {recipientName ? `${recipientName} can` : "The next caregiver can"} open Jalia and see exactly
-          what they need to take over — no need to reconstruct it from memory.
+          {recipientName ? `${recipientName} can` : "Anyone with a Jalia login on this care space can"} open the
+          app and see exactly what they need to take over.
         </p>
+
+        {shareUrl && (
+          <div className="card" style={{ textAlign: "left", marginTop: "var(--space-5)", maxWidth: 420, marginInline: "auto" }}>
+            <p className="text-sm text-muted" style={{ marginBottom: "var(--space-2)" }}>
+              Need to send this to someone without a Jalia account — a driver, a doctor at a
+              different clinic, a relative who isn't on the app? Share this link instead. It
+              needs no login and expires in 7 days.
+            </p>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <input readOnly value={shareUrl} onFocus={(e) => e.target.select()}
+                     style={{
+                       flex: 1, padding: 10, borderRadius: "var(--radius-sm)", fontSize: "0.85rem",
+                       border: "1.5px solid var(--border-strong)", background: "var(--surface-sunken)", color: "var(--text)",
+                     }} />
+              <button className="btn btn-secondary btn-sm" onClick={() => copyLink(shareUrl)}>
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <button className="btn btn-primary" style={{ marginTop: "var(--space-5)" }} onClick={() => setStep("idle")}>Done</button>
       </div>
     );

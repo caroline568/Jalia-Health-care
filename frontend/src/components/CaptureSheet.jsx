@@ -236,7 +236,7 @@ export default function CaptureSheet({ careRecipientId, onClose, onSaved, initia
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={method === "upload" ? "image/*,.pdf" : "image/*"}
+                  accept={method === "upload" ? "image/*,.pdf,.doc,.docx,.txt,.rtf" : "image/*"}
                   capture={method === "photo" ? "environment" : undefined}
                   style={{ display: "none" }}
                   onChange={handleFile}
@@ -329,6 +329,24 @@ export default function CaptureSheet({ careRecipientId, onClose, onSaved, initia
                       />
                     ) : (
                       <p style={{ marginTop: "var(--space-2)", fontSize: "0.94rem" }}>{s.summary}</p>
+                    )}
+                    {s.type === "appointment" && (
+                      <div style={{ marginTop: "var(--space-3)" }}>
+                        <label className="text-sm text-muted" style={{ display: "block", marginBottom: 4 }}>
+                          Hospital or clinic (used for directions in Navigate)
+                        </label>
+                        <input
+                          type="text"
+                          value={s.details?.location || ""}
+                          onChange={(e) => updateSuggestion(s._id, { details: { ...s.details, location: e.target.value } })}
+                          placeholder="e.g. Nairobi Hospital"
+                          style={{
+                            width: "100%", padding: 10, borderRadius: "var(--radius-sm)",
+                            border: "1.5px solid var(--border-strong)", background: "var(--surface)", color: "var(--text)",
+                            fontFamily: "inherit", fontSize: "0.9rem",
+                          }}
+                        />
+                      </div>
                     )}
                     <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
                       <button

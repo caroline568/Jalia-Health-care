@@ -8,7 +8,11 @@ from auth import require_auth
 
 uploads_bp = Blueprint("uploads", __name__, url_prefix="/api")
 
-ALLOWED_EXT = {"png", "jpg", "jpeg", "webp", "heic", "pdf", "gif", "webm", "m4a", "mp3", "wav", "ogg"}
+ALLOWED_EXT = {
+    "png", "jpg", "jpeg", "webp", "heic", "heif", "avif", "bmp", "gif",  # images
+    "pdf", "doc", "docx", "txt", "rtf",                                  # documents
+    "webm", "m4a", "mp3", "wav", "ogg",                                  # audio
+}
 
 
 def _ext_ok(filename):
@@ -24,7 +28,9 @@ def upload_file(user):
     if file.filename == "":
         return jsonify({"error": "No file selected."}), 400
     if not _ext_ok(file.filename):
-        return jsonify({"error": "Unsupported file type."}), 400
+        return jsonify({
+            "error": "Unsupported file type. Try a photo, PDF, Word document, or text file.",
+        }), 400
 
     upload_dir = current_app.config["UPLOAD_DIR"]
     os.makedirs(upload_dir, exist_ok=True)

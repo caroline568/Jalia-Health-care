@@ -169,6 +169,8 @@ class Handoff(db.Model):
     content = db.Column(db.JSON, default=dict)  # structured sections: recent, changed, outstanding, upcoming
     edited = db.Column(db.Boolean, default=False)
     shared = db.Column(db.Boolean, default=False)
+    share_token = db.Column(db.String(64))  # set when shared — grants read-only access with no login
+    share_expires_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -179,5 +181,7 @@ class Handoff(db.Model):
             "content": self.content or {},
             "edited": self.edited,
             "shared": self.shared,
+            "shareToken": self.share_token,
+            "shareExpiresAt": self.share_expires_at.isoformat() if self.share_expires_at else None,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }

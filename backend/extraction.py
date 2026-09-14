@@ -29,6 +29,21 @@ COMMUNICATION_KEYWORDS = ["called", "call", "phoned", "spoke to", "spoke with", 
 
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
+LOCATION_PATTERN = re.compile(
+    r"\bat\s+([A-Z][\w'&.-]*(?:\s+[A-Z][\w'&.-]*){0,4}?\s+"
+    r"(?:Hospital|Clinic|Centre|Center|Dispensary|Pharmacy|Medical\s+Centre|Medical\s+Center))\b"
+)
+
+
+def _guess_location(text):
+    """Best-effort guess at a hospital/clinic name mentioned in the sentence,
+    e.g. "appointment at Nairobi Hospital tomorrow" -> "Nairobi Hospital".
+    Always shown to the caregiver as an editable field before it's saved —
+    this is a starting point, not a fact Jalia asserts on its own.
+    """
+    match = LOCATION_PATTERN.search(text)
+    return match.group(1) if match else None
+
 
 def _contains_any(text, keywords):
     return [k for k in keywords if k in text]
@@ -106,11 +121,17 @@ def extract_from_text(raw_text, source="manual"):
 
         if _contains_any(s_lower, APPT_KEYWORDS):
             when = _guess_future_date(s_lower)
+            location = _guess_location(sentence)
+            details = {}
+            if when:
+                details["suggestedDate"] = when
+            if location:
+                details["location"] = location
             suggestions.append({
                 "type": "appointment",
                 "title": "Possible appointment or follow-up",
                 "summary": sentence,
-                "details": {"suggestedDate": when} if when else {},
+                "details": details,
                 "confidence": "stated" if "appointment" in s_lower or "clinic" in s_lower else "inferred",
             })
 
