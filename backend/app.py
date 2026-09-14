@@ -78,9 +78,12 @@ def _add_missing_columns():
     """
     inspector = inspect(db.engine)
     existing = {c["name"] for c in inspector.get_columns("handoffs")}
+    # SQLite and Postgres spell the timestamp type differently — this runs
+    # against both (SQLite locally, Postgres on Render), so pick per-dialect.
+    timestamp_type = "TIMESTAMP" if db.engine.dialect.name == "postgresql" else "DATETIME"
     additions = {
         "share_token": "VARCHAR(64)",
-        "share_expires_at": "DATETIME",
+        "share_expires_at": timestamp_type,
     }
     with db.engine.begin() as conn:
         for column, col_type in additions.items():
