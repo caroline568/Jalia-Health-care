@@ -6,3 +6,71 @@
 @media(max-width:900px){.media-grid{grid-template-columns:1fr 1fr}.landing-hero{grid-template-columns:1fr;gap:30px}.journey{grid-template-columns:1fr}.feature-band,.prepare-band{grid-template-columns:1fr;gap:25px}}
 @media(max-width:650px){.landing-nav{padding:0 18px}.landing-links{display:none}.landing-hero,.journey,.landing-section,.feature-band,.prepare-band,.safety{padding:45px 18px}.landing-copy h1{font-size:43px}.hero-actions{align-items:flex-start;flex-direction:column}.trust-row{display:grid;gap:7px}.journey-steps{grid-template-columns:1fr 1fr}.media-grid{grid-template-columns:1fr}.prepare-art{order:2}.topbar{padding:0 14px}.top-actions .sync{display:none}.main{padding:25px 15px}.grid2{grid-template-columns:1fr}.home-hero{grid-template-columns:1fr}.home-hero>img{height:230px}.symptom-grid{grid-template-columns:1fr}.onboard-card{margin-top:28px}.onboard-image{height:210px}.onboard-card h1{font-size:34px}footer{padding:30px 18px;display:grid}.audio-player{align-items:flex-start;flex-wrap:wrap}.audio-player .btn{margin-left:auto}}
 @media print{.topbar,.bottom-nav,.back,.btn{display:none!important}.shell{padding:0}.main{max-width:760px}}
+
+.landing-nav{max-width:none;padding-inline:max(24px,calc((100vw - 1180px)/2))}
+.landing-language{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.landing-language select,.app-language select{min-height:38px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);padding:6px 10px}
+.landing-hero-card{position:relative;display:grid;place-items:center;width:100%;max-width:none;min-height:610px;margin:0;padding:52px 24px;overflow:hidden;background:#352532}
+.landing-photo-collage{position:absolute;inset:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;opacity:.82}
+.landing-photo-collage::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(24,16,26,.56),rgba(32,21,33,.34) 50%,rgba(24,16,26,.58))}
+.landing-photo-collage img{width:100%;height:100%;min-height:610px;object-fit:cover}
+.landing-hook-card{position:relative;z-index:1;width:min(100%,690px);padding:clamp(26px,5vw,54px);border:1px solid rgba(255,255,255,.66);border-radius:28px;background:rgba(255,253,249,.94);box-shadow:0 24px 75px rgba(20,12,20,.3);backdrop-filter:blur(12px);text-align:center}
+.landing-hook-card .eyebrow{color:var(--plum)}
+.landing-hook-card h1{font:600 clamp(38px,5.7vw,68px)/1.02 Fraunces,serif;letter-spacing:-.035em;margin:10px 0 17px}
+.landing-hook-card>p{max-width:530px;margin:0 auto;color:var(--muted);font-size:16px;line-height:1.65}
+.landing-cta{gap:12px;margin:26px auto 14px;padding:14px 22px;background:var(--plum);color:#fff}
+.landing-hook-card .trust-row{justify-content:center;color:var(--sage);font-size:11px}
+.photo-disclaimer{position:absolute;right:20px;bottom:10px;z-index:1;max-width:520px;margin:0;color:#fff;font-size:10px;text-align:right;text-shadow:0 1px 4px #000}
+.life-stages{max-width:1180px;margin:auto;padding:72px 28px 48px}
+.life-stages-heading{max-width:720px;margin-bottom:24px}
+.life-stages-heading h2,.landing-guide h2,.home-guide h2{font:600 clamp(29px,4vw,44px)/1.08 Fraunces,serif;letter-spacing:-.025em;margin:0 0 12px}
+.life-stages-heading p,.life-stage-card p,.landing-guide p,.home-guide p{color:var(--muted)}
+.life-stage-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.life-stage-card{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:19px;background:var(--surface);transition:transform .18s ease,box-shadow .18s ease}
+.life-stage-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.life-stage-card img{display:block;width:100%;height:210px;object-fit:cover;object-position:center 36%}
+.life-stage-card>div{padding:15px}
+.life-stage-card h3{font:600 20px/1.15 Fraunces,serif;margin:0 0 8px}
+.life-stage-card p{font-size:12px;line-height:1.5;margin:0}
+.landing-guide{max-width:1124px;margin:12px auto 70px;padding:30px;border:1px solid var(--line);border-radius:24px;background:var(--sage-bg);display:flex;align-items:center;justify-content:space-between;gap:28px}
+.landing-guide h2{max-width:670px;margin:0;font-size:29px}
+.landing-guide .eyebrow{margin-bottom:9px}
+.home-guide{display:flex;align-items:center;justify-content:space-between;gap:22px;margin:0 0 26px;padding:20px}
+.home-guide h2{font-size:25px;margin:0 0 5px}
+.home-guide p{font-size:13px;margin:0}
+.app-language select{min-height:34px;padding:4px 7px;font-size:11px}
+
+@media(max-width:900px){
+  .landing-hero-card{min-height:560px}
+  .landing-photo-collage img{min-height:560px}
+  .life-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .life-stage-card img{height:240px}
+  .landing-guide{margin-inline:22px}
+}
+@media(max-width:650px){
+  .landing-nav{height:66px;padding:0 14px;gap:10px}
+  .landing-nav .brand{font-size:18px}
+  .landing-language{gap:4px;font-size:10px}
+  .landing-language select{min-height:36px;padding:5px}
+  .landing-nav>.btn{padding:8px 10px;font-size:11px;white-space:nowrap}
+  .landing-hero-card{min-height:610px;padding:20px 14px 48px}
+  .landing-photo-collage{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+  .landing-photo-collage img{min-height:0}
+  .landing-photo-collage img:nth-child(4),.landing-photo-collage img:nth-child(5){display:none}
+  .landing-photo-collage::after{background:rgba(25,15,25,.5)}
+  .landing-hook-card{padding:27px 21px;border-radius:22px}
+  .landing-hook-card h1{font-size:clamp(36px,10vw,50px)}
+  .landing-hook-card>p{font-size:14px}
+  .photo-disclaimer{left:14px;right:14px;bottom:8px;font-size:9px;text-align:center}
+  .life-stages{padding:44px 15px 25px}
+  .life-stage-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .life-stage-card img{height:170px}
+  .life-stage-card>div{padding:11px}
+  .life-stage-card h3{font-size:17px}
+  .life-stage-card p{font-size:11px}
+  .landing-guide{display:grid;margin:12px 15px 42px;padding:21px}
+  .landing-guide h2{font-size:25px}
+  .home-guide{align-items:flex-start;flex-direction:column}
+  .app-language select{max-width:84px}
+  .top-actions{gap:5px}
+}

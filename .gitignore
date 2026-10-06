@@ -16,7 +16,7 @@ env/
 .env.*
 !.env.example
 
-# Uploads
+# Uploaded files may contain personal health information.
 backend/uploads/
 
 # Node

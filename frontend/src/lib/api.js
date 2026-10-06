@@ -1,58 +1,68 @@
-const BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const BASE = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+let csrfToken = null;
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(message, status) {
     super(message);
     this.status = status;
   }
 }
 
-async function request(path, { method = "GET", body, isForm = false } = {}) {
-  const opts = {
-    method,
-    credentials: "include",
-    headers: {},
-  };
-
-  if (body !== undefined) {
-    if (isForm) {
-      opts.body = body;
-    } else {
-      opts.headers["Content-Type"] = "application/json";
-      opts.body = JSON.stringify(body);
-    }
-  }
-
-  let res;
-  try {
-    res = await fetch(`${BASE}${path}`, opts);
-  } catch (err) {
-    throw new ApiError("You appear to be offline. This will be retried when you're back online.", 0);
-  }
-
+async function parseResponse(response) {
   let data = null;
   try {
-    data = await res.json();
+    data = await response.json();
   } catch {
-    // no body
+    // Responses without JSON bodies are handled using their HTTP status.
   }
-
-  if (!res.ok) {
-    throw new ApiError(data?.error || "Something went wrong.", res.status);
+  if (data?.csrfToken) csrfToken = data.csrfToken;
+  if (!response.ok) {
+    throw new ApiError(data?.error || "The request could not be completed.", response.status);
   }
   return data;
+}
+
+async function getCsrfToken() {
+  if (csrfToken) return csrfToken;
+  let response;
+  try {
+    response = await fetch(`${BASE}/auth/csrf`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+  } catch {
+    throw new ApiError("The account service is unavailable. Your on-device records remain available.", 0);
+  }
+  const data = await parseResponse(response);
+  csrfToken = data.csrfToken;
+  return csrfToken;
+}
+
+async function request(path, { method = "GET", body } = {}) {
+  const headers = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (method !== "GET" && method !== "HEAD") {
+    headers["X-CSRF-Token"] = await getCsrfToken();
+  }
+
+  let response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      method,
+      credentials: "include",
+      cache: "no-store",
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError("The account service is unavailable. Your on-device records remain available.", 0);
+  }
+  return parseResponse(response);
 }
 
 export const api = {
   get: (path) => request(path),
   post: (path, body) => request(path, { method: "POST", body }),
-  patch: (path, body) => request(path, { method: "PATCH", body }),
+  put: (path, body) => request(path, { method: "PUT", body }),
   delete: (path) => request(path, { method: "DELETE" }),
-  upload: (file) => {
-    const form = new FormData();
-    form.append("file", file);
-    return request("/uploads", { method: "POST", body: form, isForm: true });
-  },
 };
-
-export { ApiError };

@@ -1,97 +1,103 @@
 import os
-from flask import Flask, jsonify
-from sqlalchemy import inspect, text
+import secrets
+from datetime import timedelta
 
-from config import Config
-from extensions import db, cors
+from flask import Flask, jsonify, request, session
+
+from database import initialize_database
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
-    app.config.from_object(Config)
+    production = os.environ.get("JALIA_ENV", "").lower() == "production"
+    secret_key = os.environ.get("JALIA_SECRET_KEY")
+    if production and not secret_key:
+        raise RuntimeError("JALIA_SECRET_KEY must be configured in production.")
 
-    os.makedirs(app.config["UPLOAD_DIR"], exist_ok=True)
-
-    db.init_app(app)
-
-    # Frontend development servers
-    origins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-    ]
-
-    # Production frontend URL from Render environment variables
-    frontend_url = os.environ.get("JALIA_FRONTEND_URL")
-    if frontend_url:
-        origins.append(frontend_url)
-
-    cors.init_app(
-        app,
-        supports_credentials=True,
-        origins=origins,
+    app.config.update(
+        SECRET_KEY=secret_key or secrets.token_hex(32),
+        DATABASE_PATH=os.environ.get(
+            "JALIA_DATABASE_PATH",
+            os.path.join(os.path.dirname(__file__), "jalia.db"),
+        ),
+        SESSION_COOKIE_NAME="jalia_session",
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SECURE=os.environ.get(
+            "JALIA_COOKIE_SECURE", "true" if production else "false"
+        ).lower() == "true",
+        SESSION_COOKIE_SAMESITE=os.environ.get(
+            "JALIA_COOKIE_SAMESITE", "None" if production else "Lax"
+        ),
+        PERMANENT_SESSION_LIFETIME=timedelta(days=14),
+        MAX_CONTENT_LENGTH=1_400_000,
+        IS_PRODUCTION=production,
     )
+    if test_config:
+        app.config.update(test_config)
+
+    origins = {
+        origin.strip().rstrip("/")
+        for origin in os.environ.get("JALIA_FRONTEND_URL", "").split(",")
+        if origin.strip()
+    }
+    if not app.config["IS_PRODUCTION"]:
+        origins.update(
+            {
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:4173",
+                "http://127.0.0.1:4173",
+            }
+        )
+    app.config["ALLOWED_ORIGINS"] = origins
 
     from auth import auth_bp
-    from api import api_bp
-    from uploads_api import uploads_bp
-    from public_api import public_bp
+    from backup import backup_bp
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(api_bp)
-    app.register_blueprint(uploads_bp)
-    app.register_blueprint(public_bp)
+    app.register_blueprint(backup_bp)
 
-    @app.errorhandler(404)
-    def not_found(e):
-        return jsonify({"error": getattr(e, "description", "Not found.")}), 404
+    @app.before_request
+    def protect_api_requests():
+        if not request.path.startswith("/api/"):
+            return None
 
-    @app.errorhandler(403)
-    def forbidden(e):
-        return jsonify({"error": getattr(e, "description", "Forbidden.")}), 403
+        origin = request.headers.get("Origin")
+        if origin and origin.rstrip("/") not in app.config["ALLOWED_ORIGINS"]:
+            return jsonify({"error": "This origin is not allowed."}), 403
 
-    @app.errorhandler(400)
-    def bad_request(e):
-        return jsonify({"error": getattr(e, "description", "Bad request.")}), 400
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            expected = session.get("csrf_token")
+            provided = request.headers.get("X-CSRF-Token")
+            if not expected or not provided or not secrets.compare_digest(expected, provided):
+                return jsonify({"error": "Your session expired. Refresh and try again."}), 403
+        return None
+
+    @app.after_request
+    def set_api_headers(response):
+        if request.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+            response.headers["Pragma"] = "no-cache"
+        origin = request.headers.get("Origin")
+        if origin and origin.rstrip("/") in app.config["ALLOWED_ORIGINS"]:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers.add("Vary", "Origin")
+        if app.config["IS_PRODUCTION"]:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
 
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok", "product": "Jalia Healthcare"})
+        return jsonify({"status": "ok", "product": "Jalia Endometriosis Journey"})
 
-    with app.app_context():
-        db.create_all()
-        _add_missing_columns()
-
+    initialize_database(app)
     return app
-
-
-def _add_missing_columns():
-    """
-    Lightweight, dependency-free migration for the one case this project
-    actually needs: adding a couple of nullable columns to a table that
-    already exists on a deployed database. db.create_all() only creates
-    tables that don't exist yet — it never alters existing ones — so
-    without this, a fresh model column (like Handoff.share_token) would
-    work locally on a brand-new SQLite file but throw "no such column" on
-    Render's already-seeded database. If this project grows much further,
-    swap this for a real migration tool (Flask-Migrate/Alembic).
-    """
-    inspector = inspect(db.engine)
-    existing = {c["name"] for c in inspector.get_columns("handoffs")}
-    # SQLite and Postgres spell the timestamp type differently — this runs
-    # against both (SQLite locally, Postgres on Render), so pick per-dialect.
-    timestamp_type = "TIMESTAMP" if db.engine.dialect.name == "postgresql" else "DATETIME"
-    additions = {
-        "share_token": "VARCHAR(64)",
-        "share_expires_at": timestamp_type,
-    }
-    with db.engine.begin() as conn:
-        for column, col_type in additions.items():
-            if column not in existing:
-                conn.execute(text(f"ALTER TABLE handoffs ADD COLUMN {column} {col_type}"))
 
 
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(port=5001)

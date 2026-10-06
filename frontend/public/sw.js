@@ -1,5 +1,22 @@
-const CACHE_VERSION = "jalia-v1";
-const APP_SHELL = ["/", "/app", "/manifest.json", "/icons/icon-192.svg", "/icons/icon-512.svg"];
+const CACHE_VERSION = "jalia-v3";
+const APP_SHELL = [
+  "/",
+  "/app",
+  "/app/learn",
+  "/manifest.json",
+  "/icons/icon-192.svg",
+  "/icons/icon-512.svg",
+  "/assets/anatomy.svg",
+  "/assets/anatomy-sw.svg",
+  "/assets/pain-map.svg",
+  "/assets/pain-map-sw.svg",
+  "/assets/jalia-hero.svg",
+  "/assets/life-stage-teen.jpg",
+  "/assets/life-stage-adult.jpg",
+  "/assets/life-stage-family.jpg",
+  "/assets/life-stage-later.jpg",
+  "/assets/life-stage-community.jpg",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

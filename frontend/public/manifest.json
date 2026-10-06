@@ -1,7 +1,7 @@
 {
   "name": "Jalia Healthcare",
   "short_name": "Jalia",
-  "description": "A simpler way for families to navigate and coordinate a loved one's care.",
+  "description": "Learn about endometriosis, understand your experience, and prepare for care.",
   "start_url": "/app",
   "id": "/",
   "display": "standalone",
